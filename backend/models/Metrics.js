@@ -7,6 +7,8 @@ const IssueLogSchema = new mongoose.Schema({
   incident: String,
   affected: Number,
   severity: String,
+  empId:         { type: String, default: '' },
+  deviationType: { type: String, enum: ['none', 'human_error', 'procedural'], default: 'none' },
   timestamp: { type: Date, default: Date.now }
 }, { _id: false });
 

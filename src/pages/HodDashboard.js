@@ -39,11 +39,28 @@ const HodDashboard = () => {
   const [loadingSup, setLoadingSup]           = useState(true);
   const [editingId, setEditingId]             = useState(null);
 
+  const DEPARTMENTS = [
+    'QC & Microbiology & AD Lab',
+    'Raw Material Warehouse',
+    'Packing Material Warehouse',
+    'Finished Good Material Warehouse',
+    'Production',
+    'Primary Packing Production',
+    'Secondary Packing Production',
+    'Post Production',
+    'Facilities',
+  ];
+
+  const toggleItem = (arr, val) =>
+    arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+
+  const arrToStr = (arr) => arr.length ? arr.join(',') : 'NONE';
+
   const [formData, setFormData] = useState({
     name: '', dob: '', employeeId: '', gmail: '', password: '',
-    department: dept, role: 'supervisor', shift: '1'
+    department: '', role: 'supervisor', shift: '1', selectedDepts: []
   });
-  const [editData, setEditData] = useState({ name: '', shift: '', password: '', gmail: '' });
+  const [editData, setEditData] = useState({ name: '', shift: '', password: '', gmail: '', department: '' });
 
   const fetchSupervisors = async () => {
     try {
@@ -56,16 +73,22 @@ const HodDashboard = () => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const handleDeptToggle = (dept) => {
+    const next = toggleItem(formData.selectedDepts, dept);
+    setFormData(prev => ({ ...prev, selectedDepts: next }));
+  };
+
   const handleCreateSupervisor = async () => {
-    if (!formData.name || !formData.gmail || !formData.password || !formData.employeeId) {
-      return showPopup('Please fill all required fields.', 'error');
+    if (!formData.name || !formData.gmail || !formData.password || !formData.employeeId || formData.selectedDepts.length === 0) {
+      return showPopup('Please fill all required fields including departments.', 'error');
     }
     try {
-      await axios.post(`${API}/users/register`, formData);
+      const payload = { ...formData, department: arrToStr(formData.selectedDepts) };
+      await axios.post(`${API}/users/register`, payload);
       showPopup(`${formData.name} registered!`, 'success');
       setIsModalOpen(false);
       fetchSupervisors();
-      setFormData({ name: '', dob: '', employeeId: '', gmail: '', password: '', department: dept, role: 'supervisor', shift: '1' });
+      setFormData({ name: '', dob: '', employeeId: '', gmail: '', password: '', department: '', role: 'supervisor', shift: '1', selectedDepts: [] });
     } catch (err) {
       showPopup(err.response?.data?.message || 'Registration failed', 'error');
     }
@@ -366,6 +389,23 @@ const HodDashboard = () => {
                   <option value="2">Shift 2</option>
                   <option value="3">Shift 3</option>
                 </select>
+              </Field>
+              <Field label="Department(s)">
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {DEPARTMENTS.map(dept => (
+                    <label key={dept} className="flex items-center gap-3 cursor-pointer group">
+                      <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                        formData.selectedDepts.includes(dept)
+                          ? 'bg-emerald-600 border-emerald-600'
+                          : 'border-emerald-200 group-hover:border-emerald-400'
+                      }`}>
+                        {formData.selectedDepts.includes(dept) && <span className="text-white text-[10px] font-black">✓</span>}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700 leading-tight">{dept}</span>
+                    </label>
+                  ))}
+                </div>
+                <input type="hidden" value={arrToStr(formData.selectedDepts)} name="department" readOnly />
               </Field>
               <button onClick={handleCreateSupervisor} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg transition-all active:scale-95">
                 Register

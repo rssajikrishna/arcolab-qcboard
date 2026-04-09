@@ -27,6 +27,7 @@ const QualityPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [customDate, setCustomDate]   = useState(new Date().toISOString().split('T')[0]);
   const [selectedIssue, setSelectedIssue] = useState('Target Met');
+  const [customReason, setCustomReason] = useState('');
   const [viewDate, setViewDate]       = useState(new Date());
 
   const viewMonth     = viewDate.getMonth();
@@ -111,7 +112,8 @@ const QualityPage = () => {
   const handleUpdateStatus = async () => {
     let updatedLogs = [...qData.issueLogs];
     const [y, m, d] = customDate.split('-');
-    const newEntry  = { date: `${d}/${m}/${y}`, rawDate: customDate, reason: selectedIssue };
+    const fullReason = customReason.trim() ? `${selectedIssue}: ${customReason}` : selectedIssue;
+    const newEntry  = { date: `${d}/${m}/${y}`, rawDate: customDate, reason: fullReason };
     const idx       = updatedLogs.findIndex(l => l.rawDate === customDate);
     if (idx !== -1) updatedLogs[idx] = newEntry; else updatedLogs.push(newEntry);
 
@@ -310,6 +312,16 @@ const QualityPage = () => {
                   <option value="Quality Reject">⚠️ Quality Reject</option>
                   <option value="Material Shortage">⚠️ Material Shortage</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Custom Reason (Optional)</label>
+                <textarea 
+                  value={customReason || ''} 
+                  onChange={e => setCustomReason(e.target.value)} 
+                  placeholder="Enter detailed reason..."
+                  rows={3}
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3.5 text-sm outline-none focus:border-blue-400 resize-none"
+                />
               </div>
               <button onClick={handleUpdateStatus}
                 className="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-[11px] text-white tracking-widest hover:bg-blue-700 active:scale-95 transition-all mt-2">

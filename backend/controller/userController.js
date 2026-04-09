@@ -7,7 +7,15 @@ const loginUser = async (req, res) => {
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid Gmail or Password' });
     }
-    res.json({ _id: user._id, name: user.name, gmail: user.gmail, role: user.role, department: user.department, shift: user.shift, employeeId: user.employeeId });
+    res.json({
+      _id: user._id,
+      name: user.name,
+      gmail: user.gmail,
+      role: user.role,
+      department: user.department,
+      shift: user.shift,
+      employeeId: user.employeeId
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -27,6 +35,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+// Fetch all supervisors (existing endpoint — keeps backward compat)
 const getSupervisors = async (req, res) => {
   try {
     const { dept } = req.params;
@@ -39,6 +48,21 @@ const getSupervisors = async (req, res) => {
   }
 };
 
+// Generic: fetch all users by role (employee | supervisor | hod | superadmin)
+const getAllByRole = async (req, res) => {
+  try {
+    const { role } = req.params;
+    const validRoles = ['employee', 'supervisor', 'hod', 'superadmin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role specified' });
+    }
+    const users = await User.find({ role }).sort({ createdAt: -1 });
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+  }
+};
+
 const updateSupervisor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -46,11 +70,11 @@ const updateSupervisor = async (req, res) => {
     const user = await User.findById(id).select('+password');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (name     && name.trim())       user.name       = name;
-    if (shift    && shift.trim())      user.shift      = shift;
-    if (department && department.trim()) user.department = department;
-    if (gmail    && gmail.trim())      user.gmail      = gmail.toLowerCase();
-    if (password && password.trim())   user.password   = password;
+    if (name       && name.trim())       user.name       = name;
+    if (shift      !== undefined)        user.shift      = shift;
+    if (department !== undefined)        user.department = department;
+    if (gmail      && gmail.trim())      user.gmail      = gmail.toLowerCase();
+    if (password   && password.trim())   user.password   = password;
 
     await user.save();
     res.status(200).json({ success: true, message: 'Updated successfully' });
@@ -59,4 +83,4 @@ const updateSupervisor = async (req, res) => {
   }
 };
 
-module.exports = { loginUser, registerUser, getSupervisors, updateSupervisor };
+module.exports = { loginUser, registerUser, getSupervisors, getAllByRole, updateSupervisor };
