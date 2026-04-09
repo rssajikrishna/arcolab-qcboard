@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Valid new department names
+// QC & Microbiology & AD Lab | Raw Material Warehouse | Packing Material Warehouse
+// Finished Good Material Warehouse | Production | Primary Packing Production
+// Secondary Packing Production | Post Production | Facilities
+// Also kept: legacy short codes Q, D, S, H, I and ALL/NONE for system use
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -28,7 +34,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a password'],
     minlength: 6,
-    select: false // Password won't be returned in queries by default
+    select: false
   },
   role: {
     type: String,
@@ -36,59 +42,41 @@ const UserSchema = new mongoose.Schema({
     default: 'user',
     lowercase: true
   },
- // models/User.js
-department: {
-  type: String,
-  uppercase: true, 
-  enum: [
-    'QUALITY (Q)',  // If you want to store the full name
-    'DELIVERY (D)', 
-    'SAFETY (S)', 
-    'HEALTH (H)', 
-    'IDEA (I)',
-    'Q', 'D', 'S', 'H', 'I', // Add these if you want to allow short codes
-    'ALL', 
-    'NONE'
-  ],
-  default: 'NONE'
-},
+  // Stored as comma-separated string for multi-value support.
+  // e.g. "QC & Microbiology & AD Lab,Production" or legacy "Q"
+  department: {
+    type: String,
+    default: 'NONE',
+    trim: true
+  },
+  // Stored as comma-separated string, e.g. "1,2" or "1"
   shift: {
     type: String,
-    enum: ['1', '2', '3', 'NONE'],
-    default: 'NONE'
+    default: 'NONE',
+    trim: true
   },
   dob: {
     type: Date
   }
 }, {
-  timestamps: true 
+  timestamps: true
 });
 
 // --- ENCRYPTION MIDDLEWARE ---
 UserSchema.pre('save', async function() {
-  // 1. Only hash if the password is new or changed
-  if (!this.isModified('password')) {
-    return; 
-  }
-
+  if (!this.isModified('password')) return;
   try {
-    // 2. Generate salt and hash
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    // No next() needed here when using async without the next parameter
   } catch (err) {
-    // If there is an error, throw it so Mongoose catches it
     throw new Error(err);
   }
 });
 
 // --- PASSWORD MATCHING METHOD ---
 UserSchema.methods.matchPassword = async function(enteredPassword) {
-  // Note: this.password will only exist if you used .select('+password') in the controller
-  if (!this.password) {
-    return false;
-  }
+  if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', UserSchema); 
+module.exports = mongoose.model('User', UserSchema);
