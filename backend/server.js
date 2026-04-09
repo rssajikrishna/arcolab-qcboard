@@ -7,6 +7,7 @@ const metricRoutes   = require('./routes/metricRoutes');
 const userRoutes     = require('./routes/userRoutes');
 const healthRoutes   = require('./routes/healthRoutes');
 const ideationRoutes = require('./routes/ideationRoutes');
+const deliveryRoutes = require('./routes/deliveryRoutes');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use('/api/metrics',   metricRoutes);
 app.use('/api/users',     userRoutes);
 app.use('/api/health',    healthRoutes);
 app.use('/api/ideation',  ideationRoutes);
+app.use('/api/delivery',  deliveryRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
