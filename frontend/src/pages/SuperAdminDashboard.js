@@ -43,22 +43,39 @@ const ShiftCheckboxes = ({ selected, onChange }) => (
   </div>
 );
 
-const DeptCheckboxes = ({ selected, onChange }) => (
-  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-    {DEPARTMENTS.map(dept => (
-      <label key={dept} className="flex items-center gap-3 cursor-pointer group">
-        <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 pointer-events-auto ${
-          selected.includes(dept)
-            ? 'bg-emerald-600 border-emerald-600'
-            : 'border-emerald-200 group-hover:border-emerald-400'
-        }`}>
-          {selected.includes(dept) && <span className="text-white text-[10px] font-black">✓</span>}
+const DeptDropdown = ({ selected, onChange }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <div
+        onClick={() => setOpen(!open)}
+        className="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-[11px] font-semibold cursor-pointer flex justify-between items-center hover:bg-emerald-50 transition-all"
+      >
+        <span className="truncate max-w-[160px]">
+          {selected.length > 0 ? `${selected.length} dept${selected.length > 1 ? 's' : ''}` : 'Select depts'}
         </span>
-        <span className="text-xs font-semibold text-slate-700 leading-tight">{dept}</span>
-      </label>
-    ))}
-  </div>
-);
+        <ChevronRight className={`transition-transform ${open ? 'rotate-90' : ''}`} size={14} />
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-emerald-100 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          {DEPARTMENTS.map(dept => (
+            <div
+              key={dept}
+              onClick={() => {
+                onChange(toggleItem(selected, dept));
+                setOpen(false);
+              }}
+              className="px-3 py-2 text-[10px] cursor-pointer hover:bg-emerald-50 border-b border-emerald-50 last:border-b-0 flex justify-between items-center"
+            >
+              <span className="truncate">{dept}</span>
+              {selected.includes(dept) && <span className="text-emerald-600 font-bold">✓</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── User table row (shared by all 3 tables) ───────────────────────────────────
 const UserRow = ({ u, showDeptShift, editData, onLocalChange, onSave }) => {
@@ -74,21 +91,11 @@ const UserRow = ({ u, showDeptShift, editData, onLocalChange, onSave }) => {
 
       {showDeptShift && (
         <>
-          <td className="px-5 py-3 min-w-[220px]">
-            <div className="space-y-1.5">
-              {DEPARTMENTS.map(dept => (
-                <label key={dept} className="flex items-center gap-2 cursor-pointer">
-                  <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all pointer-events-auto ${
-                    selectedDepts.includes(dept) ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200'
-                  }`}>
-                    {selectedDepts.includes(dept) && <span className="text-white text-[8px] font-black">✓</span>}
-                  </span>
-                  <span className="text-[9px] font-medium text-slate-600 leading-tight">{dept}</span>
-                </label>
-              ))}
-            </div>
-            {/* hidden - apply on checkbox click */}
-            <input type="hidden" onChange={() => {}} value={arrToStr(selectedDepts)} name="department" />
+          <td className="px-5 py-3 min-w-[180px]">
+            <DeptDropdown
+              selected={selectedDepts}
+              onChange={(nextDepts) => onLocalChange(id, 'department', arrToStr(nextDepts))}
+            />
           </td>
           <td className="px-5 py-3">
             <div className="flex gap-1">
@@ -186,11 +193,7 @@ const SuperAdminDashboard = () => {
     setEditData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
-  // For dept checkboxes in table — toggle and store
-  const handleDeptToggle = (id, dept, currentSelected) => {
-    const next = toggleItem(currentSelected, dept);
-    handleLocalChange(id, 'department', arrToStr(next));
-  };
+
 
   const handleRowSave = async (id, name, deptArr) => {
     const raw = editData[id];
@@ -312,7 +315,7 @@ const SuperAdminDashboard = () => {
         {/* 3 User listing tables */}
         <UserTable title="Active HODs"        count={hods.length}        users={hods}        showDeptShift={true} />
         <UserTable title="Active Supervisors" count={supervisors.length} users={supervisors} showDeptShift={true} />
-        <UserTable title="Active Employees"   count={employees.length}   users={employees}   showDeptShift={false} />
+        <UserTable title="Active Employees"   count={employees.length}   users={employees}   showDeptShift={true} />
       </div>
 
       {/* Register Modal */}
@@ -382,7 +385,7 @@ const SuperAdminDashboard = () => {
                   <span className="text-xs font-black text-slate-600 uppercase tracking-widest">Department(s)</span>
                 </div>
                 <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
-                  <DeptCheckboxes
+                  <DeptDropdown
                     selected={formData.selectedDepts}
                     onChange={val => setFormData(p => ({ ...p, selectedDepts: val }))}
                   />
